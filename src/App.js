@@ -1,114 +1,89 @@
-import React, { Component } from 'react';
+import React from 'react';
+import * as BooksAPI from './BooksAPI';
+import BookShelf from "./BookShelf";
+import SearchBooks from "./SearchBooks";
 import './App.css';
-import logo from './logo.svg';
+import { Route, Link } from "react-router-dom";
 
-/*
-Use React and the data below to display a list of users alongside their favorite movies.
+class BooksApp extends React.Component {
 
-For detailed instructions, refer to instructions.md.
-*/
+  state = {
+    books: []
+  };
 
-const profiles = [
-  {
-    id: 1,
-    userID: '1',
-    favoriteMovieID: '1',
-  },
-  {
-    id: 2,
-    userID: '2',
-    favoriteMovieID: '1',
-  },
-  {
-    id: 3,
-    userID: '4',
-    favoriteMovieID: '5',
-  },
-  {
-    id: 4,
-    userID: '5',
-    favoriteMovieID: '2',
-  },
-  {
-    id: 5,
-    userID: '3',
-    favoriteMovieID: '5',
-  },
-  {
-    id: 6,
-    userID: '6',
-    favoriteMovieID: '4',
-  },
-];
+  componentDidMount() {
+    BooksAPI
+      .getAll()
+      .then(books => { this.setState(() => ({ books })) });
+  }
 
-const users = {
-  1: {
-    id: 1,
-    name: 'Jane Cruz',
-    userName: 'coder',
-  },
-  2: {
-    id: 2,
-    name: 'Matthew Johnson',
-    userName: 'mpage',
-  },
-  3: {
-    id: 3,
-    name: 'Autumn Green',
-    userName: 'user123',
-  },
-  4: {
-    id: 4,
-    name: 'John Doe',
-    userName: 'user123',
-  },
-  5: {
-    id: 5,
-    name: 'Lauren Carlson',
-    userName: 'user123',
-  },
-  6: {
-    id: 6,
-    name: 'Nicholas Lain',
-    userName: 'user123',
-  },
-};
+  getShelf = (key, title) => ({
+    key: key,
+    title: title,
+    books: this.state.books.filter(book => book.shelf === key)
+  });
 
-const movies = {
-  1: {
-    id: 1,
-    name: 'Planet Earth 1',
-  },
-  2: {
-    id: 2,
-    name: 'Selma',
-  },
-  3: {
-    id: 3,
-    name: 'Million Dollar Baby',
-  },
-  4: {
-    id: 4,
-    name: 'Forrest Gump',
-  },
-  5: {
-    id: 5,
-    name: 'Get Out',
-  },
-};
+  moveBook = (book, shelf) => {
+    BooksAPI
+      .update(book, shelf)
+      .then(() => this.componentDidMount());
+  };
 
-class App extends Component {
   render() {
+    // break the books into categories
+    const currentBooksShelf = this.getShelf("currentlyReading", "Currently Reading");
+    const futureBooksShelf = this.getShelf("wantToRead", "Want to Read");
+    const pastBooksShelf = this.getShelf("read", "Read");
+
+    // make an array of categories, in the order they will be displayed
+    const bookShelves = [currentBooksShelf, futureBooksShelf, pastBooksShelf];
+
     return (
-      <div>
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">ReactND - Coding Practice.</h1>
-        </header>
-        <h2>Favorite Movies</h2>
+      <div className="app">
+
+        <Route
+          path="/search"
+          render={() => (
+            <SearchBooks
+              shelvedBooks={this.state.books}
+              onMoveBook={(book, shelf) => {
+                this.moveBook(book, shelf);
+              }}
+            />
+          )}
+        />
+
+        <Route
+          exact
+          path="/"
+          render={() => (
+            <div className="list-books">
+
+              <div className="list-books-title">
+                <h1>MyReads</h1>
+              </div>
+
+              <div className="list-books-content">
+                {bookShelves.map(shelf => (
+                  <BookShelf
+                    key={shelf.key}
+                    title={shelf.title}
+                    books={shelf.books}
+                    onMoveBook={this.moveBook}
+                  />
+                ))}
+              </div>
+
+              <div className="open-search">
+                <Link to="/search" ><button>Add a book</button></Link>
+              </div>
+
+            </div>
+          )}
+        />
       </div>
-    );
+    )
   }
 }
 
-export default App;
+export default BooksApp
